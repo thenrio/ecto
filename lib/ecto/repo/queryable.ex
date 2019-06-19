@@ -128,9 +128,18 @@ defmodule Ecto.Repo.Queryable do
 
   defp attach_prefix(query, opts) do
     case Keyword.fetch(opts, :prefix) do
-      {:ok, prefix} -> %{query | prefix: prefix}
+      {:ok, prefix} -> put_prefix(query, prefix) |> IO.inspect(structs: false)
       :error -> query
     end
+  end
+
+  defp put_prefix(%{combinations: []} = query, prefix) do
+    %{query | prefix: prefix}
+  end
+
+  defp put_prefix(%{combinations: combinations} = query, prefix) do
+    combinations = Enum.map(combinations, fn {type, query} -> {type, put_prefix(query, prefix)} end)
+    %{query | prefix: prefix, combinations: combinations}
   end
 
   defp execute(operation, name, query, opts) when is_list(opts) do

@@ -547,6 +547,26 @@ defmodule Ecto.RepoTest do
       assert schema.__meta__.prefix == "public"
     end
 
+    test "get, get_by, one and all sets schema prefix on combinations" do
+      query = MySchema |> union(^MySchema)
+
+      # assert TestRepo.get(query, 123)
+      # assert_received {:all, query}
+      # assert %{prefix: "public", combinations: [{_, %{prefix: "public"}}]} = query
+
+      # assert TestRepo.get_by(query, [id: 123], prefix: "public")
+      # assert_received {:all, query}
+      # assert %{prefix: "public", combinations: [{_, %{prefix: "public"}}]} = query
+
+      assert TestRepo.one(query, prefix: "public")
+      assert_received {:all, query}
+      assert %{prefix: "public", combinations: [{_, %{prefix: "public"}}]} = query
+
+      assert TestRepo.all(query, prefix: "public")
+      # assert_received {:all, query}
+      # assert %{prefix: "public", combinations: [{_, %{prefix: "public"}}]} = query
+    end
+
     test "get, get_by, one and all ignores prefix if schema_prefix set" do
       assert schema = TestRepo.get(MySchemaWithPrefix, 123, prefix: "public")
       assert schema.__meta__.prefix == "private"

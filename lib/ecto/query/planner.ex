@@ -196,13 +196,13 @@ defmodule Ecto.Query.Planner do
   def plan(query, operation, adapter, counter) do
     query
     |> plan_sources(adapter)
-    |> plan_assocs
+    |> plan_assocs()
     |> plan_combinations(operation, adapter, counter)
     |> plan_cache(operation, adapter, counter)
-  rescue
-    e ->
-      # Reraise errors so we ignore the planner inner stacktrace
-      filter_and_reraise e, System.stacktrace
+  # rescue
+  #   e ->
+  #     # Reraise errors so we ignore the planner inner stacktrace
+  #     filter_and_reraise e, System.stacktrace
   end
 
   @doc """
@@ -722,7 +722,7 @@ defmodule Ecto.Query.Planner do
         {type, prepared_query}
       end
 
-    Map.put(query, :combinations, combinations)
+    %{query | combinations: combinations}
   end
 
   defp find_source_expr(query, 0) do
