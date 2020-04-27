@@ -451,8 +451,13 @@ defmodule Ecto.Query.Builder do
     {{:{}, [], [:type, [], [expr, Macro.escape(type)]]}, params_acc}
   end
 
-  defp escape_subquery({:subquery, _, [expr]}, _, {params, subqueries}, _vars, _env) do
-    subquery = quote(do: Ecto.Query.subquery(unquote(expr)))
+  defp escape_subquery({:subquery, _, [expr]}, type, {params, subqueries}, vars, env) do
+    subquery = quote do
+      q = unquote(expr)
+      {:in, {_binding, _field}} = unquote(type)
+      Ecto.Query.Builder.validate_select_has_count_expressions!(q, 1)
+      Ecto.Query.subquery(q)
+    end
     index = length(subqueries)
     expr = {:subquery, index} # used both in ast and in parameters, as a placeholder.
     {expr, {[expr | params], [subquery | subqueries]}}
@@ -460,6 +465,25 @@ defmodule Ecto.Query.Builder do
   defp escape_subquery(expr, type, params, vars, env) do
     escape(expr, type, params, vars, env)
   end
+
+  def validate_select_has_count_expressions!(q, count) do
+    # Current feature is select 1 expression
+    case q.select do
+      nil -> Ecto.Query.Builder.error!("subquery must select 1 expression")
+      %Ecto.Query.SelectExpr{expr: expr} -> validate_count_expressions!(expr, 1)
+    end
+    true
+  end
+
+  defp validate_count_expressions!(expressions, n)
+    when is_list(expressions) and length(expressions) == n, do:
+    true
+
+  defp validate_count_expressions!({:{}, _, expressions}, n), do:
+    validate_count_expressions!(expressions, n)
+
+  defp validate_count_expressions!(_, n), do:
+    error!("subquery must select exactly #{n} expression")
 
   defp wrap_nil(params, {:{}, _, [:^, _, [ix]]}), do: wrap_nil(params, ix, [])
   defp wrap_nil(params, _other), do: params
